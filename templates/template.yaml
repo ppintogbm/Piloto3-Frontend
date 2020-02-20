@@ -6,8 +6,8 @@ metadata:
   tags: ibmcom/ace
 labels:
   template: calculadora-front
-  version: "1.0"
-  app: ${APP}
+  templateVersion: "1.0"
+  app: ${APP}-front
 parameters:
   - description: Application deployment name
     displayName: Application
@@ -38,19 +38,18 @@ objects:
   - kind: DeploymentConfig
     apiVersion: v1
     metadata:
-      name: ${APP}-${NAME}
+      name: ${APP}-${NAME}-prod
+      labels:
+        version: prod
     spec:
       replicas: 1
       selector:
-        template: calculadora-front
-        version: "1.0"
-        app: ${APP}
+        app: ${APP}-front
       template:
         metadata:
           labels:
-            template: calculadora-front
-            version: "1.0"
-            app: ${APP}
+            app: ${APP}-front
+            version: prod
         spec:
           serviceAccount: ${SA}
           containers:
@@ -82,19 +81,63 @@ objects:
               name: ${IMAGE}:latest
               namespace: ${NAMESPACE}
         - type: ConfigChange
+  - kind: DeploymentConfig
+    apiVersion: v1
+    metadata:
+      name: ${APP}-${NAME}-canary
+      labels:
+        version: canary
+    spec:
+      replicas: 1
+      selector:
+        app: ${APP}-canary
+      template:
+        metadata:
+          labels:
+            app: ${APP}-front
+            version: prod
+        spec:
+          serviceAccount: ${SA}
+          containers:
+            - name: springboot
+              image: " "
+              imagePullPolicy: "Always"
+              args:
+                - "--com.gbm.url=http://${APP}-api:7800/calculadora/v1/operaciones"
+              ports:
+                - containerPort: 8080
+                  protocol: TCP
+                  name: http
+              livenessProbe:
+                httpGet:
+                  path: /
+                  port: http
+              readinessProbe:
+                httpGet:
+                  path: /
+                  port: http
+      triggers:
+        - type: ImageChange
+          imageChangeParams:
+            containerNames:
+              - springboot
+            automatic: true
+            from:
+              kind: ImageStreamTag
+              name: ${IMAGE}:canary
+              namespace: ${NAMESPACE}
+        - type: ConfigChange
   - kind: Service
     apiVersion: v1
     metadata:
       name: ${APP}-${NAME}
     labels:
-      app: ${APP}
+      app: ${APP}-front
     spec:
       selector:
-        template: calculadora-front
-        version: "1.0"
-        app: ${APP}
+        app: ${APP}-front
       type: ClusterIP
       ports:
         - port: 8080
           protocol: TCP
-          name: 8080-tcp
+          name: http-8080

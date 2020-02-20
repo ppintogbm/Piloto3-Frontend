@@ -51,7 +51,7 @@ pipeline{
 								mkdir -pv /kaniko/.docker
 								echo "{\\"auths\\":{\\"$REGISTRY\\":{\\"username\\":\\"openshift\\",\\"password\\":\\"$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)\\"}}}" | tee /kaniko/.docker/config.json
 								echo "Building $REPOSITORY"
-								/kaniko/executor --context="dir://`pwd`" --destination=$REPOSITORY:$TAG --destination=$REPOSITORY:latest --cache=true --cache-ttl=24h
+								/kaniko/executor --context="dir://`pwd`" --destination=$REPOSITORY:$TAG --cache=true --cache-ttl=24h
 						'''
 				}
 			}
@@ -63,12 +63,14 @@ pipeline{
             openshift.withCluster(){
               openshift.withProject(){
                 def applicationName = !params.appOverride? "calculadora":params.appOverride
-                def deployment = openshift.selector('dc',[template: 'calculadora-front', app: applicationName])
+                def deployment = openshift.selector('dc',"${APP}-front-canary")
                 if(!deployment.exists()){
                   echo "Deploying application component: frontend, with Application name: ${applicationName}..."
                   openshift.apply(openshift.process("-f","templates/template.yaml","-p=APP=${applicationName}","-p=IMAGE=${params.app}-front"))
-                  deployment = openshift.selector('dc',[template: 'calculadora-front', app: applicationName])
+                  deployment = openshift.selector('dc',"${APP}-front-canary")
                 }
+								echo "Tagging ${env.repository.split('/')[2]}:${env.tag} as ${env.repository.split('/')[2]}:canary"
+								openshift.tag("${env.repository.split('/')[2]}:${env.tag}","${env.repository.split('/')[2]}:canary");
                 def latestVersion = deployment.object().status.latestVersion
                 def deploymentName = deployment.object().metadata.name
                 echo "Checking application component status: ${latestVersion}..."
