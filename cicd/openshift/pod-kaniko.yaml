@@ -7,9 +7,6 @@ metadata:
     sidecar.istio.io/inject: "false"
 spec:
   volumes:
-    - name: kaniko-cache
-      persistentVolumeClaim:
-          claimName: kaniko-cache
     - name: maven-repo
       persistentVolumeClaim:
           claimName: maven-repo
@@ -47,9 +44,6 @@ spec:
         limits:
           cpu: "2000m"
           memory: "2048Mi"
-      volumeMounts:
-        - name: kaniko-cache
-          mountPath: /cache
     - name: maven
       image: maven:3.6.3-jdk-8
       command: 
