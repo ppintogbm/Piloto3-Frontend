@@ -50,6 +50,8 @@ objects:
           labels:
             app: ${APP}-front
             version: prod
+          annotations:
+            sidecar.istio.io/inject: "true"
         spec:
           serviceAccount: ${SA}
           containers:
@@ -90,12 +92,14 @@ objects:
     spec:
       replicas: 1
       selector:
-        app: ${APP}-canary
+        app: ${APP}-front
       template:
         metadata:
           labels:
             app: ${APP}-front
-            version: prod
+            version: canary
+          annotations:
+            sidecar.istio.io/inject: "true"
         spec:
           serviceAccount: ${SA}
           containers:

@@ -66,7 +66,7 @@ pipeline{
                 def deployment = openshift.selector('dc',"${APP}-front-canary")
                 if(!deployment.exists()){
                   echo "Deploying application component: frontend, with Application name: ${applicationName}..."
-                  openshift.apply(openshift.process("-f","templates/template.yaml","-p=APP=${applicationName}","-p=IMAGE=${params.app}-front"))
+                  openshift.apply(openshift.process("-f","templates/template.yaml","-p=APP=${applicationName}","-p=IMAGE=${params.app}-front","-p=NAMESPACE=${openshift.project()}"))
                   deployment = openshift.selector('dc',"${APP}-front-canary")
                 }
 								echo "Tagging ${env.repository.split('/')[2]}:${env.tag} as ${env.repository.split('/')[2]}:canary"
