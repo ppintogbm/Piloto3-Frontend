@@ -7,7 +7,7 @@ metadata:
 labels:
   template: calculadora-front
   templateVersion: "1.0"
-  app: ${APP}-front
+  app: ${APP}-${NAME}
 parameters:
   - description: Application deployment name
     displayName: Application
@@ -44,11 +44,11 @@ objects:
     spec:
       replicas: 1
       selector:
-        app: ${APP}-front
+        app: ${APP}-${NAME}
       template:
         metadata:
           labels:
-            app: ${APP}-front
+            app: ${APP}-${NAME}
             version: prod
           annotations:
             sidecar.istio.io/inject: "true"
@@ -92,11 +92,11 @@ objects:
     spec:
       replicas: 1
       selector:
-        app: ${APP}-front
+        app: ${APP}-${NAME}
       template:
         metadata:
           labels:
-            app: ${APP}-front
+            app: ${APP}-${NAME}
             version: canary
           annotations:
             sidecar.istio.io/inject: "true"
@@ -136,12 +136,51 @@ objects:
     metadata:
       name: ${APP}-${NAME}
     labels:
-      app: ${APP}-front
+      app: ${APP}-${NAME}
     spec:
       selector:
-        app: ${APP}-front
+        app: ${APP}-${NAME}
       type: ClusterIP
       ports:
         - port: 8080
           protocol: TCP
           name: http-8080
+  - kind: VirtualService
+    apiVersion: networking.istio.io/v1alpha3
+    metadata:
+      name: ${APP}-${NAME}
+    spec:
+      hosts:
+        - "*"
+      gateways:
+        - ${APP}-${NAME}
+      http:
+        - match:
+            - uri: 
+                prefix: /
+          route:
+            - destination:
+                host: ${APP}-${NAME}
+                subset: prod
+                port:
+                  number: 8080
+              weight: 100
+            - destination:
+                host: ${APP}-${NAME}
+                subset: canary
+                port:
+                  number: 8080
+              weight: 0
+  - kind: DestinationRule
+    apiVersion: networking.istio.io/v1alpha3
+    metadata:
+      name: ${APP}-${NAME}
+    spec:
+      host: ${APP}-${NAME}
+      subsets:
+      - name: prod
+        labels:
+          version: prod
+      - name: canary
+        labels:
+          version: canary
