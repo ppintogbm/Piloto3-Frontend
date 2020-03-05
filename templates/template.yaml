@@ -34,6 +34,9 @@ parameters:
     name: SA
     required: true
     value: default
+  - description: Application hostname for Gateway
+    name: HOSTNAME
+    required: true
 objects:
   - kind: DeploymentConfig
     apiVersion: v1
@@ -184,3 +187,17 @@ objects:
       - name: canary
         labels:
           version: canary
+  - kind: Gateway
+    apiVersion: networking.istio.io/v1alpha3
+    metadata:
+      name: ${APP}-${NAME}
+    spec:
+      selector:
+        istio: ingressgateway
+      servers:
+        - hosts:
+            - ${HOSTNAME}
+          port:
+            name: http
+            number: 80
+            protocol: HTTP
